@@ -40,10 +40,27 @@ coverage.xml
 .ipynb_checkpoints/
 
 # ─────────────────────────────────────────────────────────────
+# .NET / C#
+# ─────────────────────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+project.lock.json
+# dotnet-code-review 运行时产物
+.dotnet-review/
+
+# ─────────────────────────────────────────────────────────────
 # IDE / 编辑器
 # ─────────────────────────────────────────────────────────────
 .vscode/
 .idea/
+.zcode/
 *.swp
 *.swo
 *~
