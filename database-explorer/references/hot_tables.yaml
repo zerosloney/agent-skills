@@ -1,0 +1,62 @@
+# 热表别名配置
+#
+# 作用：为高频业务表注册中文语义别名，Agent 通过 search --semantic 匹配。
+# 手工维护，上限建议 50 张表。超出后仍能工作，但全表语义匹配耗时随表数线性增长
+# （按 §3.4 开销模型推算）；超限建议改用 search --semantic 的列名自动匹配。
+#
+# 格式（aliases 支持三种写法，向后兼容）：
+#   字符串别名:   "客户"                  # 精确匹配，权重 1.0
+#   权重别名:     {term: "VIP客户", weight: 2.0}   # 命中后分数加权
+#   通配符别名:  {term: "sp_*", weight: 1.5}      # fnmatch 风格（* ?），预编译
+#   术语组别名:  {term: "库存", group: "仓储"}    # group 暂保留字段，计划用于分组
+#
+# 格式（其他字段）：
+#   aliases: [alias1, alias2, ...]              # 仅字符串别名时的简写
+#   description: "一句话描述"                     # 可选，帮助 Agent 理解表用途
+#   key_columns: [col1, col2, ...]              # 可选，常用查询列
+#
+# --- 批量导入操作指南 ---
+#
+# 从现有数据库快速生成热表配置：
+# 1. 先连接数据库: db_tool.py connect --db-type <type> --server <host> ...
+# 2. 导出表列表:    db_tool.py schema  > tables.txt
+# 3. 按表名推断别名（例如 users → 用户, orders → 订单）
+#    或让 Agent 协助: "帮我根据这些表名生成 hot_tables.yaml 别名"
+# 4. 将生成内容合并到此文件，每表 ≤8 个别名，总条目 ≤50
+#
+# 常用别名映射规则（Agent 辅助生成时参考）:
+#   users/customers   → 用户/客户/买家
+#   orders/sales      → 订单/交易/销售
+#   products/items    → 商品/产品/SKU
+#   employees/staff   → 员工/职员/人员
+#   departments       → 部门
+#   logs/audits       → 日志/审计
+#   payments/bills    → 支付/账单
+#   inventory/stocks  → 库存
+
+hot_tables:
+
+  customers:
+    aliases: [用户, 客户, 买家, 消费者]
+    description: 客户基本信息表
+    key_columns: [customer_id, name, email, phone]
+
+  orders:
+    aliases: [订单, 交易, 销售记录]
+    description: 订单主表，记录每笔交易的概要信息
+    key_columns: [order_id, customer_id, order_date, status, total_amount]
+
+  order_items:
+    aliases: [订单明细, 订单商品, 订单行]
+    description: 订单明细表，关联订单中的具体商品
+    key_columns: [order_id, product_id, quantity, unit_price]
+
+  products:
+    aliases: [商品, 产品, 货品, SKU]
+    description: 商品信息表，包含价格和库存
+    key_columns: [product_id, name, category, price, stock]
+
+  employees:
+    aliases: [员工, 职员, 人员]
+    description: 员工信息表
+    key_columns: [employee_id, name, department, salary]

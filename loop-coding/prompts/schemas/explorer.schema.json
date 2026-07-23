@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "explorer input schema",
+  "description": "explorer agent 在 Cycle 1a 接收的注入字段。产出项目结构 JSON。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_brief", "project_root"],
+  "properties": {
+    "task_brief": {
+      "type": "string",
+      "minLength": 1,
+      "description": "任务简报（仅作上下文，explorer 不拆任务）"
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "项目根目录绝对路径"
+    }
+  }
+}

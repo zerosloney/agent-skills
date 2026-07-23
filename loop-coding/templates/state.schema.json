@@ -1,0 +1,273 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "loop-coding State",
+  "type": "object",
+  "required": ["version", "task_brief", "project_root", "contract", "cycles"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^3.[0-9]+.[0-9]+$"
+    },
+    "task_brief": {
+      "type": "string"
+    },
+    "project_root": {
+      "type": "string"
+    },
+    "bootstrap": {
+      "type": "object",
+      "properties": {
+        "completed": { "type": "boolean" },
+        "stack": { "type": "string", "description": "技术栈描述，如 '.NET 8 Web API + EF Core + MySQL'" },
+        "check_commands": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } },
+        "seed_tests": { "type": "integer", "description": "种子测试数量" },
+        "agent_id": { "type": "string", "description": "bootstrap agent 的 ID" }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "passed": { "type": "integer" },
+          "failed": { "type": "integer" },
+          "warnings": { "type": "integer" },
+          "skipped": { "type": "integer" }
+        }
+      }
+    },
+    "baseline_failures": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unreliable_commands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "基线阶段检测到的不稳定检查命令，循环中仅做参考不计入停止条件"
+    },
+    "check_results": {
+      "type": "object",
+      "description": "确定性检查命令输出，baseline 由 loop_runner run-checks --baseline 写入",
+      "properties": {
+        "baseline": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/checkResult" }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "description": "启动时确定的运行时配置（不含凭证，凭证在 ~/loop_coding_tfs_config.json + keyring）",
+      "properties": {
+        "vcs_type": {
+          "type": "string",
+          "enum": ["git", "tfs", "other"]
+        },
+        "tfs_workspace": {
+          "type": "string",
+          "description": "当前目录匹配的 TFS workspace 名（仅 vcs_type=tfs）"
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "description": "Loop Contract 6 字段契约（见 references/loop_contract.md）",
+      "required": ["trigger", "task", "scope", "budget", "stop", "report", "confirmed_at", "start_at"],
+      "properties": {
+        "trigger": {
+          "type": "string",
+          "description": "触发信号原文"
+        },
+        "task": {
+          "type": "string",
+          "description": "一句话任务目标"
+        },
+        "scope": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "本轮允许修改的文件列表"
+        },
+        "budget": {
+          "type": "object",
+          "required": ["max_cycles", "max_wall_time_per_cycle_min"],
+          "properties": {
+            "max_cycles": { "type": "integer", "minimum": 1, "description": "默认 5" },
+            "max_wall_time_per_cycle_min": { "type": "integer", "minimum": 1, "description": "默认 30" },
+            "max_cost_total": { "type": "number", "description": "可选，用户声明的美元上限" }
+          }
+        },
+        "stop": {
+          "type": "object",
+          "required": ["main", "auxiliary"],
+          "properties": {
+            "main": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["all_green", "user_abort", "cycles_exhausted"] }
+            },
+            "auxiliary": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["repeat_failure", "regression", "no_progress", "capability_boundary", "fix_plan_done"] }
+            }
+          }
+        },
+        "report": {
+          "type": "object",
+          "required": ["channels"],
+          "properties": {
+            "channels": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["chat", "state_file", "im"] }
+            }
+          }
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "用户确认契约的 ISO8601 时间戳"
+        },
+        "start_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Cycle 1 启动时间"
+        }
+      }
+    },
+    "cycle_1a_exploration": {
+      "type": "object",
+      "properties": {
+        "project_type": { "type": "string" },
+        "top_dirs": { "type": "object" },
+        "check_commands": { "type": "object" },
+        "entry_points": { "type": "array", "items": { "type": "string" } },
+        "risk_points": { "type": "array", "items": { "type": "string" } },
+        "domain_conventions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "cycles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "n": { "type": "integer" },
+          "builder_changes": {
+            "type": "object",
+            "properties": {
+              "files_modified": { "type": "array", "items": { "type": "string" } },
+              "summary": { "type": "string" },
+              "fix_plan_in_progress": { "type": "string" },
+              "declared_scope": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "learnings": { "type": "string" },
+          "fingerprints": { "type": "array", "items": { "type": "string" } },
+          "scope_drift": { "type": "boolean" },
+          "builder_scope_drift": { "type": ["object", "null"] },
+          "vcs_audit": {
+            "type": "object",
+            "properties": {
+              "vcs_actual": { "type": "array", "items": { "type": "string" } },
+              "builder_reported": { "type": "array", "items": { "type": "string" } },
+              "builder_only": { "type": "array", "items": { "type": "string" } },
+              "vcs_only": { "type": "array", "items": { "type": "string" } },
+              "match": { "type": "boolean" },
+              "error": { "type": "string" }
+            }
+          },
+          "check_results": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/checkResult" }
+          },
+          "checker_timestamp": { "type": "string", "format": "date-time" },
+          "checker_report": { "type": "string" }
+        }
+      }
+    },
+    "registry": {
+      "type": "object",
+      "description": "审计记录（cycles 快照 + 硬重启事件）",
+      "properties": {
+        "cycles": {
+          "type": "object",
+          "description": "key 为 cycle 编号",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "pre_checker": {
+                "type": "object",
+                "properties": {
+                  "vcs_head": { "type": "string" },
+                  "stash_ref": { "type": "string" }
+                }
+              },
+              "cycle_start": {
+                "type": "object",
+                "description": "Builder 前快照；SCOPE_DRIFT 必须基于它计算本轮实际变更",
+                "properties": {
+                  "vcs_head": { "type": "string" },
+                  "changeset": { "type": "string" },
+                  "local_changes": { "type": "array", "items": { "type": "string" } },
+                  "changed_file_hashes": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                  },
+                  "timestamp": { "type": "string", "format": "date-time" }
+                }
+              },
+              "post_checker": {
+                "type": "object",
+                "properties": {
+                  "diff_stat": { "type": "string" },
+                  "self_verified": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "hard_reset_events": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "description": "循环结束时的 REPORT 字段持久化（见 references/loop_contract.md §5）",
+      "properties": {
+        "result": {
+          "type": "string",
+          "enum": ["success", "incomplete", "aborted_by_user"],
+          "description": "success=ALL GREEN; incomplete=辅助条件/轮次用尽/infra_error; aborted_by_user=用户主动停止"
+        },
+        "stop_reason": { "type": "string" },
+        "final_cycle": { "type": "integer" },
+        "stopped_at_cycle": { "type": "integer" },
+        "cycles_used": { "type": "integer" },
+        "fixed_items": { "type": "array", "items": { "type": "string" } },
+        "failed_items": { "type": "array", "items": { "type": "string" } },
+        "attempted_fixes": { "type": "array", "items": { "type": "string" } },
+        "why_loop_wont_help": { "type": "string" },
+        "recommendation": { "type": "string", "enum": ["continue", "hard_reset", "abort"] },
+        "user_decision_required": { "type": "boolean" },
+        "state_path": { "type": "string" },
+        "resume_hint": { "type": "string" }
+      }
+    }
+  },
+  "definitions": {
+    "checkResult": {
+      "type": "object",
+      "required": ["name", "command", "exit_code", "duration_ms", "stdout", "stderr", "fingerprints"],
+      "properties": {
+        "name": { "type": "string" },
+        "command": { "type": "string" },
+        "exit_code": { "type": "integer" },
+        "duration_ms": { "type": "integer" },
+        "timeout_ms": { "type": "integer" },
+        "stdout": { "type": "string" },
+        "stderr": { "type": "string" },
+        "error": { "type": "string" },
+        "fingerprints": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

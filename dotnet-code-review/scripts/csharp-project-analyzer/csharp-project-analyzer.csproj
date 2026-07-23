@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 4.12.0 支持 C# 12/13 新语法 -->
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.12.0" />
+  </ItemGroup>
+</Project>

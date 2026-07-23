@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "builder input schema",
+  "description": "builder agent 每轮接收的注入字段。\n- cycle 必填 >= 1\n- fix_plan_in_progress 必填，cycle 1 时由 planner 产出后注入；若无内容传字符串 '无'\n- Cycle >= 2 时 last_failures / last_builder_changes / progress_md_patterns 必填",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_brief", "project_root", "cycle", "fix_plan_in_progress"],
+  "properties": {
+    "task_brief": {
+      "type": "string",
+      "minLength": 1,
+      "description": "用户原始任务描述"
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "项目根目录绝对路径"
+    },
+    "cycle": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "当前轮次编号（>= 1）"
+    },
+    "fix_plan_in_progress": {
+      "type": "string",
+      "description": "fix_plan.md ## In Progress 段当前项文本；无内容时传 '无'（不要传 null）"
+    },
+    "last_failures": {
+      "type": "string",
+      "description": "Cycle >= 2 必填：上一轮 checker 报告中的 FAILED 项列表（提取后），无则传 '无'"
+    },
+    "last_builder_changes": {
+      "type": "string",
+      "description": "Cycle >= 2 必填：上一轮 builder 修改文件列表（comma-separated），无则传 '无'"
+    },
+    "progress_md_patterns": {
+      "type": "string",
+      "description": "Cycle >= 2 必填：progress.md 中 Codebase Patterns 段内容，无则传 '无'"
+    }
+  }
+}

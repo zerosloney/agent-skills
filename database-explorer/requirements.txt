@@ -1,0 +1,19 @@
+# 核心依赖（必须）
+keyring>=24.0
+sqlalchemy>=2.0
+numpy>=1.24
+pyyaml>=6.0
+
+# 数据库驱动（按需安装）
+# SQL Server:
+# pymssql>=2.2
+# MySQL:
+# pymysql>=1.1
+# PostgreSQL:
+# psycopg2-binary>=2.9
+
+# 可选加速（推荐）
+# sqlglot>=25.0      # --learn 查询学习
+
+# 测试（开发环境）
+pytest>=8.0

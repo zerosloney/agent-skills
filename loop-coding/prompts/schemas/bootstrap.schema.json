@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "bootstrap input schema",
+  "description": "bootstrap agent 在 Cycle -1 接收的注入字段。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_brief", "project_root"],
+  "properties": {
+    "task_brief": {
+      "type": "string",
+      "minLength": 1,
+      "description": "用户原始任务描述"
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "项目根目录绝对路径"
+    },
+    "stack_hint": {
+      "type": "string",
+      "description": "可选：用户指定的栈（如 'python' / 'node' / 'dotnet'）；无则按 references/bootstrap.md 规则推断"
+    }
+  }
+}

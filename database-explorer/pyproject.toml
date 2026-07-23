@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "database-explorer"
+dynamic = ["version"]
+description = "AI Agent 配套的数据库探索 CLI 工具，支持 SQL Server / MySQL / PostgreSQL / SQLite"
+requires-python = ">=3.10"
+readme = "SKILL.md"
+license = {text = "MIT"}
+
+dependencies = [
+    "keyring>=24.0",
+    "sqlalchemy>=2.0",
+    "numpy>=1.24",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+sqlserver = ["pymssql>=2.2"]
+mysql = ["pymysql>=1.1"]
+postgresql = ["psycopg2-binary>=2.9"]
+learn = [
+    "sqlglot>=25.0",
+]
+all = [
+    "pymssql>=2.2",
+    "pymysql>=1.1",
+    "psycopg2-binary>=2.9",
+    "sqlglot>=25.0",
+]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+db-tool = "scripts.db_tool:main"
+
+[tool.setuptools.packages.find]
+where = ["scripts"]
+
+[tool.setuptools.dynamic]
+version = {attr = "scripts.db_tool.__version__"}
+
+# ─────────────────────────────────────────────────────────────────
+# ruff 配置
+# ─────────────────────────────────────────────────────────────────
+# E402: sys.path.insert(0, ...) → 紧随其后的 imports 报 E402。
+#       所有源文件和测试文件均通过 sys.path 导入同目录模块，无法避免。
+# E701: 多语句单行（冒号）→ _query_learning.py 故意用 if/for 单行体省行数。
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+select = ["E", "F"]
+# E402: sys.path.insert(0, ...) pattern unavoidable in all source/test files
+# E701: intentional one-liner if/for in _query_learning.py
+# E501: CLI help strings and long SQL JOINs legitimately exceed 120 chars
+ignore = ["E402", "E501", "E701"]
+
+[tool.ruff.lint.per-file-ignores]
+# tests/ 中故意 import os/sys/json/yaml 组合（pytest fixture pattern），单行 import 是测试文件惯例
+"scripts/tests/*" = ["E401"]
+# _query_learning.py: E701 intentional one-liners already in ignore above
+# _security.py: E702 intentionally suppressed in individual lines (quote compat)

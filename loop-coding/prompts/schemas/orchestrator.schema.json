@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "orchestrator input schema",
+  "description": "orchestrator 启动时接收的注入字段。orchestrator 自身不扮演任何被分派角色，注入后等子代理返回再决策。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_brief", "project_root"],
+  "properties": {
+    "task_brief": {
+      "type": "string",
+      "minLength": 1,
+      "description": "用户原始任务描述（未经 orchestrator 提炼）"
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "项目根目录绝对路径"
+    },
+    "current_state": {
+      "type": ["string", "null"],
+      "description": "若检测到 .loop-state.json，恢复时传入的状态摘要；无则为 null"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["auto", "--once", "--loop"],
+      "default": "auto",
+      "description": "auto = 按 references/triggers.md 自动判断；--once = 强制单次模式；--loop = 强制完整循环"
+    }
+  }
+}

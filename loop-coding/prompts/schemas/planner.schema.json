@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "planner input schema",
+  "description": "planner agent 在 Cycle 0 接收的注入字段。产出 fix_plan.md。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_brief", "project_root"],
+  "properties": {
+    "task_brief": {
+      "type": "string",
+      "minLength": 1,
+      "description": "用户原始任务描述"
+    },
+    "project_root": {
+      "type": "string",
+      "minLength": 1,
+      "description": "项目根目录绝对路径"
+    },
+    "contract_scope": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "可选：Loop Contract 中的 scope 列表；planner 产出 fix_plan item scope 必须 ⊆ contract.scope"
+    },
+    "baseline_summary": {
+      "type": "string",
+      "description": "可选：基线检查结果摘要（脏基线场景）；无预存失败时传 '无'"
+    },
+    "cycle_1a_exploration": {
+      "type": "string",
+      "description": "可选：Cycle 1a explorer 输出的项目结构 JSON 文本；跳过 explorer 时传 '无'"
+    }
+  }
+}
