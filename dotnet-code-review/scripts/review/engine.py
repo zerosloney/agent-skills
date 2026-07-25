@@ -8,6 +8,7 @@ import re
 import subprocess
 import tempfile
 import concurrent.futures
+from collections.abc import Callable
 import time
 from functools import lru_cache
 from pathlib import Path
@@ -1815,6 +1816,46 @@ def _csproj_for_files(cs_files: list[str], max_depth: int = 8) -> list[str]:
 # ============================================================
 
 
+def _cpu_count() -> int:
+    """Return the number of available CPUs, defaulting to 1."""
+    try:
+        return os.cpu_count() or 1
+    except NotImplementedError:
+        return 1
+
+
+def _parallel_map_files(
+    func: Callable[[str, str], list[CodeIssue]],
+    file_codes: dict[str, str],
+    layer_name: str,
+    max_workers: int | None = None,
+) -> list[CodeIssue]:
+    """Run a file-level analysis function across all files in parallel.
+
+    Args:
+        func: Function taking (filepath, code) and returning a list of CodeIssue.
+        file_codes: Mapping of filepath to source code.
+        layer_name: Human-readable layer name for logging.
+        max_workers: Max parallel workers (default: min(8, cpu_count)).
+
+    Returns:
+        Combined list of issues from all files.
+    """
+    results: list[CodeIssue] = []
+    workers = max_workers or min(8, _cpu_count())
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(func, fp, code): fp
+            for fp, code in file_codes.items()
+        }
+        for f in concurrent.futures.as_completed(futures):
+            try:
+                results.extend(f.result())
+            except Exception as e:
+                logger.warning("%s check failed for %s: %s", layer_name, futures[f], e)
+    return results
+
+
 def run_review(args) -> dict:
     """Main review entry point."""
     start_time = time.time()
@@ -2081,53 +2122,66 @@ def run_review(args) -> dict:
     no_docs = getattr(args, "no_docs", False)
     if not no_docs:
         executed_layers.add("doc")
-        for filepath, code in file_codes.items():
-            doc_issues = check_xml_documentation(filepath, code)
-            all_issues.extend(doc_issues)
-        layer_counts["doc"] = sum(1 for i in all_issues if i.source == "doc")
+        _doc_issues = _parallel_map_files(check_xml_documentation, file_codes, "Doc")
+
+        all_issues.extend(_doc_issues)
+        layer_counts["doc"] = len(_doc_issues)
     else:
         skipped_layer_details.append({"layer": "doc", "reason": "--no-docs"})
 
     # ── Layer 7b: Style comment check (S001/S002/S005, zero dependency) ──
     # These detect TODO/FIXME without author and commented-out code. Pure text
-    # scan — AST walkers can't see comments reliably. Patterns are stable
-    # (low false-positive). S001/S002/S005 also have AUTO_FIXES.
+    # scan. Parallelized across files.
     executed_layers.add("style")
-    for filepath, code in file_codes.items():
+    _style_issues: list[CodeIssue] = []
+
+    def _check_style_file(filepath: str, code: str) -> list[CodeIssue]:
+        issues: list[CodeIssue] = []
         for i, line in enumerate(code.split("\n"), 1):
             stripped = line.strip()
             # S001: TODO without author (// TODO not followed by ( or :)
             if re.search(r"//\s*TODO(?![(:])", stripped):
-                all_issues.append(CodeIssue(
+                issues.append(CodeIssue(
                     file=filepath, line=i, severity="info", category="style",
                     rule="S001", message="TODO without author",
                     source="style", suggestion="Format as `// TODO(username): message`."))
             # S002: FIXME without plan
             if re.search(r"//\s*FIXME", stripped):
-                all_issues.append(CodeIssue(
+                issues.append(CodeIssue(
                     file=filepath, line=i, severity="info", category="style",
                     rule="S002", message="FIXME without plan",
                     source="style", suggestion="Add a linked issue number and description."))
             # S005: commented-out code (// if|for|foreach|while|switch|return|var|int|string|bool)
             if re.match(r"//\s*(?:if|for|foreach|while|switch|return|var|int|string|bool)\b", stripped):
-                all_issues.append(CodeIssue(
+                issues.append(CodeIssue(
                     file=filepath, line=i, severity="info", category="style",
                     rule="S005", message="Commented-out code",
                     source="style", suggestion="Remove dead code. Use source control history if needed later."))
-    layer_counts["style"] = sum(1 for i in all_issues if i.source == "style")
+        return issues
+
+    _style_issues = _parallel_map_files(_check_style_file, file_codes, "Style")
+    all_issues.extend(_style_issues)
+    layer_counts["style"] = len(_style_issues)
 
     # ── Layer 7c: Performance text hints (P021 Span, info only) ──
     executed_layers.add("perf_hint")
-    for filepath, code in file_codes.items():
+    _perf_issues: list[CodeIssue] = []
+
+    def _check_perf_file(filepath: str, code: str) -> list[CodeIssue]:
+        issues: list[CodeIssue] = []
         for i, line in enumerate(code.split("\n"), 1):
             stripped = line.strip()
             # P021: prefer Span<T> — flag byte[] parameters in hot-path signatures
             if re.search(r"\bbyte\[\]\s+\w+", stripped) and "override" not in stripped:
-                all_issues.append(CodeIssue(
+                issues.append(CodeIssue(
                     file=filepath, line=i, severity="info", category="performance",
                     rule="P021", message="byte[] parameter — consider Span<byte> for zero-copy",
                     source="style", suggestion="Use Span<T> or ReadOnlySpan<T> to avoid array allocations."))
-    layer_counts["perf_hint"] = sum(1 for i in all_issues if i.rule == "P021")
+        return issues
+
+    _perf_issues = _parallel_map_files(_check_perf_file, file_codes, "Perf hint")
+    all_issues.extend(_perf_issues)
+    layer_counts["perf_hint"] = sum(1 for i in _perf_issues if i.rule == "P021")
 
     # ── Layer 8: NuGet Version Check ──
     if nuget_packages:
