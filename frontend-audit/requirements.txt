@@ -1,0 +1,12 @@
+# frontend-audit runtime dependencies: NONE required.
+#
+# The CLI runs on the Python standard library alone — the regex visitor tier
+# (scripts/audit/visitors.py) is the default and needs no third-party packages.
+#
+# Optional — enables the precise AST tier (cross-line / data-flow accuracy):
+#   pip install tree-sitter>=0.21 tree-sitter-javascript>=0.21 tree-sitter-typescript>=0.21
+# When absent, _try_init_tree_sitter() returns None and the regex tier runs
+# instead (see SKILL.md §5 for the accuracy trade-off).
+#
+# Dev / test only:
+#   pytest>=8.0

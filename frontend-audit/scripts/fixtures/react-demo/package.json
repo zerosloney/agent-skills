@@ -1,0 +1,9 @@
+{
+  "name": "react-demo-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.0.0",
+    "dompurify": "^3.0.0"
+  }
+}

@@ -8,8 +8,17 @@ AI Agent 技能（Skills）集合仓库。每个子目录是一个独立、可�
 |------|------|------|
 | [database-explorer](./database-explorer/) | 0.6.0 | 数据库探索 CLI：连接、查询、结构探索、CRUD 生成、CSV 导出。支持 SQL Server / MySQL / PostgreSQL / KingbaseES（人大金仓）/ SQLite。写操作自动确认，密码经 keyring 存入系统密钥链。 |
 | [dotnet-code-review](./dotnet-code-review/) | 0.4.1 | C#/.NET 代码审查。基于 Roslyn（AST + Semantic + Project）+ dotnet build/format + 离线 CVE 库，覆盖安全/性能/可靠性/最佳实践/架构/测试 6 维度，支持 SARIF 输出与自动修复。 |
+| [frontend-audit](./frontend-audit/) | 0.1.0 | JavaScript/TypeScript + React 前端代码审查 CLI：编排 eslint + tsc + npm audit + 13 条自研 AST/正则语义规则（XSS/eval/open-redirect/密钥/可靠性）。Triage→Verify 协议 + json-compact + SARIF 输出。 |
 | [loop-coding](./loop-coding/) | — | 循环式 AI 编码：builder 修改、checker 验证，直到检查通过或触发停止条件。默认 `--once` 单轮模式。 |
 | [winforms-dev-flow](./winforms-dev-flow/) | — | WinForm + DevExpress 业务窗体生成（.NET Framework 4.7.2）：列表窗体、主从结构、编辑弹窗、查询/新增/修改/删除界面，支持增量编辑与架构迁移。 |
+
+### 设计中（仅 DESIGN.md，未实现）
+
+| 技能 | 说明 |
+|------|------|
+| [api-contract-tester](./api-contract-tester/) | API 契约漂移检测：代码实现 vs OpenAPI/proto/GraphQL 的破坏性变更检测。 |
+| [test-scaffolder](./test-scaffolder/) | 测试骨架生成：函数/端点签名 → 参数等价类 + 边界值矩阵 + pytest/jest 骨架。 |
+| [git-archaeologist](./git-archaeologist/) | 代码考古：blame → PR/issue 关联 → 提取设计意图，回答"这段代码为什么存在"。 |
 
 > 各技能的安装方式、命令速查、触发规则与设计约束，见对应目录下的 `SKILL.md`。
 
@@ -28,6 +37,13 @@ agent-skills/
 │   ├── pytest.ini
 │   ├── references/
 │   └── scripts/            # review.py + csharp-*-analyzer 工程
+├── frontend-audit/         # JS/TS + React 前端审查 CLI（Python）
+│   ├── SKILL.md
+│   ├── pytest.ini
+│   ├── requirements.txt
+│   ├── references/
+│   ├── scripts/            # audit.py + audit/ 包 + fixtures/
+│   └── tests/
 ├── loop-coding/            # 循环式编码
 │   ├── SKILL.md
 │   ├── INDEX.md
