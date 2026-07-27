@@ -1,0 +1,251 @@
+# =============================================================================
+# OKF (Open Knowledge Format) v0.1 — Google Specification
+# =============================================================================
+# 来源: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+# OKF 是 Google 2026-06 发布的企业知识标准化开放格式。
+# 底层 = Markdown + YAML frontmatter，最小约定，最大互操作性。
+# =============================================================================
+
+spec_version: "0.1"
+
+# =============================================================================
+# §4.1 — 官方 OKF Frontmatter 字段
+# =============================================================================
+# 来源: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#41-frontmatter
+
+required_fields:
+  type:
+    type: string
+    description: >
+      概念类型标识。消费者用此进行路由、过滤和展示。
+      OKF 不规定类型注册表，生产者选择描述性名称，消费者必须能优雅处理未知类型。
+    example: concept
+    notes: >
+      llm-wiki-manager 的 12 种 entity_type 与 OKF type 直接映射。
+      推荐使用 type 作为主字段，entity_type 保留为向后兼容别名。
+
+recommended_fields:
+  title:
+    type: string
+    description: "人类可读的展示名称。省略时消费者可从文件名派生。"
+    example: "Python Asyncio — 异步编程指南"
+
+  description:
+    type: string
+    description: "单句摘要。用于 index.md 生成、搜索摘要和预览。"
+    example: "Python 异步编程核心框架的原理、用法和最佳实践"
+
+  resource:
+    type: string
+    format: uri
+    description: >
+      标识概念描述的底层资产的规范 URI。适用于有物理对应物（表/API/数据集）的概念；
+      纯抽象概念可省略。
+    example: "https://console.cloud.google.com/bigquery?p=project&d=ds&t=table"
+
+  tags:
+    type: array
+    items: string
+    description: "用于跨领域分类的短标签列表。"
+    example: [python, async, concurrency]
+
+  timestamp:
+    type: string
+    format: ISO 8601
+    description: "最后有意义的变更时间。"
+    example: "2026-06-19T14:30:00Z"
+
+# =============================================================================
+# §4.2 — 推荐的正文章节约定
+# =============================================================================
+# 来源: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#42-body
+
+conventional_sections:
+  "# Schema":
+    description: 结构化数据资产的行/字段描述
+    when: 页面描述的是有模式的数据资产（表、API、数据结构）
+
+  "# Examples":
+    description: 具体使用示例（通常放在围栏代码块中）
+    when: 始终推荐
+
+  "# Citations":
+    description: 支持正文声明的外部来源
+    when: 正文引用外部资料时
+
+# =============================================================================
+# §8 — 引用格式
+# =============================================================================
+# 来源: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#8-citations
+#
+# 引用应位于正文底部的 # Citations 章节，编号列出：
+#   [1] [标题](https://...)
+#   [2] [标题](/bundle-relative-path)
+#
+# 引用链接可以是绝对 URL、Bundle 相对路径，或指向 references/ 子目录。
+
+# =============================================================================
+# §6 — index.md 渐进式披露
+# =============================================================================
+# 来源: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#6-index-files
+#
+# index.md 不含 frontmatter（唯一例外是 bundle-root index.md 可用 okf_version）。
+# 正文用带标题的分组列表：
+#   # Section Name
+#   * [Title](path) - description
+#
+# 条目应包含被链接概念 frontmatter 的描述。
+
+# =============================================================================
+# §7 — log.md 更新日志
+# =============================================================================
+# 来源: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md#7-log-files
+#
+# log.md 记录变更历史，先新后旧：
+#   # Directory Update Log
+#   ## 2026-06-19
+#   * **Update**: ...
+#   * **Creation**: ...
+#
+# 日期标题必须 ISO 8601 YYYY-MM-DD。
+
+# =============================================================================
+# §9 — 一致性要求
+# =============================================================================
+# Bundle 满足以下条件即为 OKF v0.1 一致：
+#   1. 每个非保留 .md 文件包含可解析的 YAML frontmatter
+#   2. 每个 frontmatter 包含非空的 type 字段
+#   3. index.md 和 log.md 遵循 §6/§7 结构（存在时）
+#
+# 消费者不得拒绝 bundle 因为：
+#   - 缺少可选 frontmatter 字段
+#   - 未知 type 值
+#   - 未知的额外 frontmatter 键
+#   - 损坏的交叉链接
+#   - 缺少 index.md
+
+# =============================================================================
+# §11 — 版本标识
+# =============================================================================
+# bundle-root 的 index.md 可用 frontmatter 声明版本：
+#   okf_version: "0.1"
+# 消费者如不理解声明的版本应尽力消费而非拒绝。
+
+# =============================================================================
+# §3 — Bundle 结构
+# =============================================================================
+# path/to/bundle/
+# ├── index.md           # 可选。目录列表，渐进式披露
+# ├── log.md             # 可选。变更历史
+# ├── <concept>.md       # bundle 根级别的概念
+# └── <subdirectory>/
+#     ├── index.md
+#     ├── <concept>.md
+#     └── ...
+#
+# §3.1 — 保留文件名（不得用于概念文档）
+#   index.md  — 目录列表
+#   log.md    — 更新历史
+
+# =============================================================================
+# §5 — 交叉链接
+# =============================================================================
+# 推荐使用 bundle 根相对路径的绝对链接：
+#   [customers table](/tables/customers.md)
+# 也支持标准 Markdown 相对路径：
+#   [neighboring concept](./other.md)
+#
+# 消费者必须容忍损坏的链接（可能指向未写入的知识）。
+# llm-wiki-manager 同时支持 [[WikiLink]] 格式，在 export 时转换为标准链接。
+
+# =============================================================================
+# llm-wiki-manager 项目扩展字段
+# =============================================================================
+# OKF §4.1 明确允许生产者包含任何额外键。以下为此项目扩展：
+# 这些字段不是 OKF 标准的一部分，但项目内部使用。
+
+project_extensions:
+  entity_type:
+    type: string
+    description: >
+      type 的向后兼容别名。12 种类型见 schema/entity-types.yaml。
+      新页面应使用 type，entity_type 保留只为兼容旧页面。
+    example: concept
+
+  confidence:
+    type: number
+    description: "知识置信度 0.0–1.0。0=完全不确定，1=完全确定。"
+    minimum: 0.0
+    maximum: 1.0
+    example: 0.85
+
+  status:
+    type: string
+    description: "生命周期状态：draft | review | published | archived"
+    enum: [draft, review, published, archived]
+    default: draft
+
+  aliases:
+    type: array
+    items: string
+    description: "同义词/别名，用于跨部门术语统一。"
+    example: ["异步IO", "asyncio"]
+
+  domains:
+    type: array
+    items: string
+    description: "知识领域分区。"
+    example: [分布式系统, 中间件]
+
+  sources:
+    type: array
+    items:
+      type: string
+    description: "原始素材来源列表（raw/ 下的文件或 URL）。"
+    example: [raw/article.md, "web:https://example.com/article"]
+
+  provenance:
+    type: object
+    description: "来源追溯信息。"
+    fields:
+      original_source: { type: string, description: "原始来源 URL 或文件路径" }
+      extracted_by: { type: string, description: "提取方式" }
+      extracted_at: { type: string, description: "提取日期 ISO 8601" }
+      sha256: { type: string, description: "源文件 SHA256 哈希" }
+
+  related_articles:
+    type: array
+    description: "显式知识关联（比 [[链接]] 语义更丰富）。"
+    items:
+      type: object
+      fields:
+        id: { type: string, description: "关联页面文件名（不含 .md）" }
+        relation:
+          type: string
+          enum: [prerequisite, extends, contradicts, references, supersedes, related]
+        note: { type: string, description: "关联说明" }
+
+  version_history:
+    type: array
+    description: "版本追踪记录。"
+    items:
+      type: object
+      fields:
+        version: { type: string }
+        date: { type: string, format: YYYY-MM-DD }
+        changes: { type: string }
+
+# =============================================================================
+# 旧版字段 → 新版字段 映射（迁移用）
+# =============================================================================
+# 旧字段名从 okf_ 前缀改为无前缀的扩展字段，与官方 OKF 字段对齐。
+migration_map:
+  okf_version: "已废弃 — 版本信息应放在 bundle root index.md 的 okf_version frontmatter 字段（OKF §11）"
+  okf_status: status
+  okf_confidence: confidence
+  okf_provenance: provenance
+  okf_related: related_articles
+  okf_tags: "合并到 tags（官方 OKF 字段）"
+  okf_created: "已废弃 — 用 timestamp（ISO 8601 最后修改时间）"
+  okf_modified: "已废弃 — 用 timestamp"
+  okf_version_history: version_history

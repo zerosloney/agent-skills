@@ -1,0 +1,127 @@
+# =============================================================================
+# 实体类型 Schema — LLM Wiki Manager
+# =============================================================================
+# 用途：编译知识页面时，Agent 必须从此集合中选择 entity_type。
+# 不允许创造 schema 之外的实体类型。
+# =============================================================================
+# 设计原则：
+#   base_types  — 稳定核心类型，跨版本不修改
+#   extensions  — 按需扩展，Agent 提议 + 用户确认后可添加
+# =============================================================================
+#
+# === OKF (Open Knowledge Format) v0.1 兼容说明 ===
+# Google 2026-06 发布的 OKF v0.1 标准通过 type 字段定义实体分类。
+# llm-wiki-manager 的 entity_type 与 OKF type 100% 兼容，type 为官方字段名。
+# 来源: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+# =============================================================================
+#
+# | OKF type (官方)      | llm-wiki-manager entity_type      | 说明                    |
+# |----------------------|-------------------------------------|-------------------------|
+# | concept              | concept                             | 1:1 映射                |
+# | implementation       | implementation-detail               | 命名略有差异            |
+# | procedure            | tutorial                            | 概念等同                |
+# | reference            | reference                           | 1:1 映射                |
+# | case-study           | case-study                          | 1:1 映射                |
+# | position             | opinion                             | 概念等同                |
+# | comparison           | comparison                          | 1:1 映射                |
+# | decision             | decision-record                     | 概念等同                |
+# | diagnostic           | troubleshooting                     | 概念等同                |
+# | overview             | survey                              | 概念等同                |
+# | quick-reference      | cheat-sheet                         | 命名略有差异            |
+# | specification        | standard                            | 概念等同                |
+# | protocol | algorithm | data-format | tool | 等扩展类型 | extensions 部分新增  | OKF 扩展类型按需添加    |
+# =============================================================================
+#
+# 新页面推荐使用 type 作为主字段：
+#   type: concept               # OKF v0.1 规范字段（推荐）
+#   entity_type: concept        # 向后兼容别名
+
+version: "1.0"
+
+# --- 基础类型（通用知识库，不动） ---
+# 结构：以类型名为 key 的字典，方便 O(1) 按名查找
+base_types:
+  concept:
+    label: "概念"
+    aliases: [concept, 概念, 理论, 原理]
+    description: "抽象概念、理论、模型、范式"
+    require_sections: [定义与核心思想, 关键原理]
+
+  implementation-detail:
+    label: "实现细节"
+    aliases: [implementation, 实现, 技术方案, 架构细节]
+    description: "具体技术的实现方式、架构设计、技术选型"
+    require_sections: [方案描述, 关键考量]
+
+  tutorial:
+    label: "教程"
+    aliases: [tutorial, 教程, 指南, 操作手册, how-to]
+    description: "步骤化操作指南、最佳实践"
+    require_sections: [前提条件, 步骤]
+
+  reference:
+    label: "参考资料"
+    aliases: [reference, 参考, 文献, 资料, 论文]
+    description: "外部资料索引、论文总结、书籍笔记"
+    require_sections: [来源, 核心内容]
+
+  case-study:
+    label: "案例分析"
+    aliases: [case-study, 案例, 场景, 实践]
+    description: "具体场景下的实践分析、案例复盘"
+    require_sections: [背景, 方案, 结果]
+
+  opinion:
+    label: "观点"
+    aliases: [opinion, 观点, 论述, 思辨]
+    description: "主观观点、思辨分析、对立观点讨论"
+    require_sections: [主张, 论据]
+
+# --- 扩展类型（按用户场景添加） ---
+# 扩展规则：
+#   1. Agent 发现 base_types 都不够贴切时，可提议添加扩展类型
+#   2. 用户确认后，在此添加 type 条目
+#   3. 扩展类型会继承基础校验逻辑
+# =============================================================================
+extensions:
+  - type: comparison
+    label: "对比评估"
+    aliases: [comparison, 对比, vs, 区别, 异同, compare]
+    description: "两个或多个实体的多维度对比分析"
+    require_sections: [对比维度, 各方特点, 结论]
+    tags: [cross-reference, analysis]
+
+  - type: decision-record
+    label: "架构决策"
+    aliases: [adr, decision-record, 决策, 选型, 设计决策]
+    description: "架构决策记录（ADR），含决策背景和论证过程"
+    require_sections: [背景, 方案, 论证, 结论]
+    tags: [governance]
+
+  - type: troubleshooting
+    label: "问题诊断"
+    aliases: [troubleshooting, 排错, 诊断, 故障处理, faq]
+    description: "常见问题排查步骤和解决方案"
+    require_sections: [现象, 原因, 解决步骤]
+    tags: [ops, support]
+
+  - type: survey
+    label: "综述"
+    aliases: [survey, 综述, 总结, 趋势, 全景]
+    description: "领域综述、趋势分析、技术全景图"
+    require_sections: [背景, 各派观点, 趋势判断]
+    tags: [forward-looking]
+
+  - type: cheat-sheet
+    label: "速查表"
+    aliases: [cheatsheet, cheat-sheet, 速查, 参考表, 一览]
+    description: "语法速查、命令参考、API 列表"
+    require_sections: [条目列表]
+    tags: [reference]
+
+  - type: standard
+    label: "规范"
+    aliases: [standard, 规范, 约定, 规则, 标准]
+    description: "编码规范、设计规范、团队约定"
+    require_sections: [适用范围, 规则, 违反后果]
+    tags: [governance]
